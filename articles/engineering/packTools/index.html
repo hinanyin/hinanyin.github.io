@@ -1,0 +1,578 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>打包工具 | Nanyin</title><meta name="author" content="Linfeng.Wang"><meta name="copyright" content="Linfeng.Wang"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="gulp 流式工程化 pipeline  12345var gulp &#x3D; require(&#x27;gulp&#x27;);gulp.src(&#x27;xxx.js&#x27;)  &#x2F;&#x2F; 获取流的目标  .pipe(            &#x2F;&#x2F; 途径过程编排    gulp.dest(&#x27;dist&#x2F;xxx.js&#x27;);  &#x2F;&#x2F; 流目的地  ) src() 获取到想要处理的流文">
+<meta property="og:type" content="article">
+<meta property="og:title" content="打包工具">
+<meta property="og:url" content="https://hinanyin.github.io/articles/engineering/packTools/index.html">
+<meta property="og:site_name" content="Nanyin">
+<meta property="og:description" content="gulp 流式工程化 pipeline  12345var gulp &#x3D; require(&#x27;gulp&#x27;);gulp.src(&#x27;xxx.js&#x27;)  &#x2F;&#x2F; 获取流的目标  .pipe(            &#x2F;&#x2F; 途径过程编排    gulp.dest(&#x27;dist&#x2F;xxx.js&#x27;);  &#x2F;&#x2F; 流目的地  ) src() 获取到想要处理的流文">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://bu.dusays.com/2022/05/26/628fa0426213d.png">
+<meta property="article:published_time" content="2025-02-26T07:04:31.000Z">
+<meta property="article:modified_time" content="2025-02-28T06:12:45.434Z">
+<meta property="article:author" content="Linfeng.Wang">
+<meta property="article:tag" content="工程化">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://bu.dusays.com/2022/05/26/628fa0426213d.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "打包工具",
+  "url": "https://hinanyin.github.io/articles/engineering/packTools/",
+  "image": "https://bu.dusays.com/2022/05/26/628fa0426213d.png",
+  "datePublished": "2025-02-26T07:04:31.000Z",
+  "dateModified": "2025-02-28T06:12:45.434Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "Linfeng.Wang",
+      "url": "https://hinanyin.github.io/"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.ico"><link rel="canonical" href="https://hinanyin.github.io/articles/engineering/packTools/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//fonts.googleapis.com" crossorigin=""/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          const mediaQueryDark = window.matchMedia('(prefers-color-scheme: dark)')
+          const mediaQueryLight = window.matchMedia('(prefers-color-scheme: light)')
+          
+          if (theme === undefined) {
+            if (mediaQueryLight.matches) activateLightMode()
+            else if (mediaQueryDark.matches) activateDarkMode()
+            else {
+              const hour = new Date().getHours()
+              const isNight = hour <= 6 || hour >= 18
+              isNight ? activateDarkMode() : activateLightMode()
+            }
+            mediaQueryDark.addEventListener('change', () => {
+              if (saveToLocal.get('theme') === undefined) {
+                e.matches ? activateDarkMode() : activateLightMode()
+              }
+            })
+          } else {
+            theme === 'light' ? activateLightMode() : activateDarkMode()
+          }
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web&amp;display=swap" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"languages":{"hits_empty":"未找到符合您查询的内容: ${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"簡"},
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: true,
+    post: true
+  },
+  runtime: '天',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: {"limitCount":50,"languages":{"author":"作者: Linfeng.Wang","link":"链接: ","source":"来源: Nanyin","info":"著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。"}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"已切换为繁体中文","cht_to_chs":"已切换为简体中文","day_to_night":"已切换为深色模式","night_to_day":"已切换为浅色模式","bgLight":"#49b1f5","bgDark":"#2d3035","position":"bottom-left"},
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: true,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  },
+  autoDarkmode: true
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '打包工具',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/modify.css"><!-- hexo injector head_end start --><link rel="stylesheet" href="/css/footer-beautify-runtime.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://unpkg.zhimg.com/hexo-butterfly-tag-plugins-plus@latest/lib/assets/font-awesome-animation.min.css" media="defer" onload="this.media='all'"><link rel="stylesheet" href="https://npm.elemecdn.com/hexo-butterfly-tag-plugins-plus@latest/lib/tag_plugins.css" media="defer" onload="this.media='all'"><!-- hexo injector head_end end --><meta name="generator" content="Hexo 7.3.0"></head><body><div id="web_bg" style="background-image: url(/img/index_bg.jpg);"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">24</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">14</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">4</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博文</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/shuoshuo/"><i class="fa-fw fa fa-comment"></i><span> 分享</span></a></li><li><a class="site-page child" href="/gallery/"><i class="fa-fw fa fa-camera-retro"></i><span> 相册</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 影视</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(https://bu.dusays.com/2022/05/26/628fa0426213d.png);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">Nanyin</span></a><a class="nav-page-title" href="/"><span class="site-name">打包工具</span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博文</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/shuoshuo/"><i class="fa-fw fa fa-comment"></i><span> 分享</span></a></li><li><a class="site-page child" href="/gallery/"><i class="fa-fw fa fa-camera-retro"></i><span> 相册</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 影视</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">打包工具</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2025-02-26T07:04:31.000Z" title="发表于 2025-02-26 15:04:31">2025-02-26</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2025-02-28T06:12:45.434Z" title="更新于 2025-02-28 14:12:45">2025-02-28</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E5%89%8D%E7%AB%AF/">前端</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E5%89%8D%E7%AB%AF/%E5%B7%A5%E7%A8%8B%E5%8C%96/">工程化</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">3.7k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>13分钟</span></span><span class="post-meta-separator">|</span><span id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span class="waline-pageview-count" data-path="/articles/engineering/packTools/"><i class="fa-solid fa-spinner fa-spin"></i></span></span><span class="post-meta-separator">|</span><span class="post-meta-commentcount"><i class="far fa-comments fa-fw post-meta-icon"></i><span class="post-meta-label">评论数:</span><a href="/articles/engineering/packTools/#post-comment"><span class="waline-comment-count" data-path="/articles/engineering/packTools/"><i class="fa-solid fa-spinner fa-spin"></i></span></a></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><div id="post-outdate-notice" data="{&quot;limitDay&quot;:365,&quot;messagePrev&quot;:&quot;It has been&quot;,&quot;messageNext&quot;:&quot;days since the last update, the content of the article may be outdated.&quot;,&quot;postUpdate&quot;:&quot;2025-02-28 14:12:45&quot;}" hidden></div><p><img src="/images/engineering/pTools_1.png" alt=""></p>
+<h2 id="gulp"><a href="#gulp" class="headerlink" title="gulp"></a>gulp</h2><blockquote>
+<p>流式工程化 pipeline</p>
+</blockquote>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> gulp = <span class="built_in">require</span>(<span class="string">&#x27;gulp&#x27;</span>);</span><br><span class="line">gulp.<span class="title function_">src</span>(<span class="string">&#x27;xxx.js&#x27;</span>)  <span class="comment">// 获取流的目标</span></span><br><span class="line">  .<span class="title function_">pipe</span>(            <span class="comment">// 途径过程编排</span></span><br><span class="line">    gulp.<span class="title function_">dest</span>(<span class="string">&#x27;dist/xxx.js&#x27;</span>);  <span class="comment">// 流目的地</span></span><br><span class="line">  )</span><br></pre></td></tr></table></figure>
+<h3 id="src"><a href="#src" class="headerlink" title="src()"></a>src()</h3><blockquote>
+<p>获取到想要处理的流文件</p>
+</blockquote>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">gulp.<span class="title function_">src</span>(globs[, options]); <span class="comment">// =&gt; stream 并非原本文件流，虚拟文件对象流 =&gt; 减少IO次数</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 1. globs 文件匹配模式</span></span><br><span class="line"><span class="comment">// 使用数组的方式匹配文件种类</span></span><br><span class="line">gulp.<span class="title function_">src</span>([<span class="string">&#x27;./js/*.js&#x27;</span>, <span class="string">&#x27;./css/*.css&#x27;</span>])</span><br><span class="line"></span><br><span class="line"><span class="comment">// 2. options 处理文件的配置项</span></span><br><span class="line"><span class="comment">// options.buffer - boolean 返回buffer，使用场景大文件 =&gt; false时，返回一个抽象的stream而非文件本身</span></span><br><span class="line"><span class="comment">// options.read - boolean文件内容是否返回 =&gt; 判断文件内容是否读取返回，file.content返回值</span></span><br><span class="line"><span class="comment">// options.base - 文件基础路径</span></span><br><span class="line">gulp.<span class="title function_">src</span>(<span class="string">&#x27;./main/js/*.js&#x27;</span>, &#123; <span class="attr">base</span>: <span class="string">&#x27;main&#x27;</span> &#125;)</span><br></pre></td></tr></table></figure>
+<ol>
+<li>base 路径问题</li>
+</ol>
+<blockquote>
+<ul>
+<li>默认会以匹配模式中最左边的通配符之前的路径作为 base，并保留之前的目录结构</li>
+</ul>
+</blockquote>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> gulp = <span class="built_in">require</span>(<span class="string">&quot;gulp&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// base 路径是 src，最左边的通配符 * 之前的路径是 src，所以，src/js 目录下的所有 .js 文件会被复制到 dist/js 目录中，最终产物的路径会保留 src 之后的目录结构</span></span><br><span class="line">gulp.<span class="title function_">task</span>(<span class="string">&quot;default&quot;</span>, <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">return</span> gulp.<span class="title function_">src</span>(<span class="string">&quot;src/js/*.js&quot;</span>).<span class="title function_">pipe</span>(gulp.<span class="title function_">dest</span>(<span class="string">&quot;dist&quot;</span>));</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line"><span class="comment">// base 路径是 src/js，那么 src/js 目录下的所有 .js 文件会被直接复制到 dist 目录中，而不会保留 src/js 这一层目录结构</span></span><br><span class="line">gulp.<span class="title function_">task</span>(<span class="string">&quot;default&quot;</span>, <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">return</span> gulp.<span class="title function_">src</span>(<span class="string">&quot;src/js/*.js&quot;</span>, &#123; <span class="attr">base</span>: <span class="string">&quot;src/js&quot;</span> &#125;).<span class="title function_">pipe</span>(gulp.<span class="title function_">dest</span>(<span class="string">&quot;dist&quot;</span>));</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+<ol>
+<li>通配符分类</li>
+</ol>
+<ul>
+<li><code>*</code>: 匹配任意数量的任意字符，但不包括路径分隔符 <code>/</code></li>
+<li><code>**</code>: 匹配任意数量的任意字符，包括路径分隔符 <code>/</code>，可以用于递归匹配</li>
+<li><code>?</code>: 匹配单个任意字符</li>
+</ul>
+<h3 id="pipe"><a href="#pipe" class="headerlink" title="pipe()"></a>pipe()</h3><blockquote>
+<p>把文件流通过 pipe 形式导入到 gulp 的通路中，途径插件</p>
+</blockquote>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">gulp</span><br><span class="line">  .<span class="title function_">src</span>(<span class="string">&quot;./main/js/*.js&quot;</span>, &#123; <span class="attr">base</span>: <span class="string">&quot;main&quot;</span> &#125;)</span><br><span class="line">  .<span class="title function_">pipe</span>(<span class="title function_">minify</span>())</span><br><span class="line">  .<span class="title function_">pipe</span>(gulp.<span class="title function_">dest</span>(<span class="string">&quot;build&quot;</span>));</span><br></pre></td></tr></table></figure>
+<h3 id="dest"><a href="#dest" class="headerlink" title="dest()"></a>dest()</h3><blockquote>
+<p>用于将处理后的文件写入到指定的目标路径<br>文件产出的路径是 gulp.dest(path) 指定的目录与 base 之后的目录结构的组合</p>
+</blockquote>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">gulp.<span class="title function_">dest</span>(path[, options])</span><br><span class="line"><span class="comment">// 1. path - 写入文件的路径</span></span><br><span class="line"><span class="comment">// 2. options可选参数</span></span><br><span class="line">  <span class="comment">// options.mode - string 0777 所在目录的权限</span></span><br></pre></td></tr></table></figure>
+<h3 id="watch"><a href="#watch" class="headerlink" title="watch()"></a>watch()</h3><blockquote>
+<p>监视文件变化，用以触发相应编排流程的开展</p>
+</blockquote>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">gulp.<span class="title function_">watch</span>(glob[, opts], tasks);</span><br><span class="line"><span class="comment">// glob - 监视文件的匹配模式</span></span><br><span class="line"><span class="comment">// tasks - 文件变化后要执行的任务</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 创建任务</span></span><br><span class="line">gulp.<span class="title function_">task</span>(<span class="string">&#x27;minify&#x27;</span>, <span class="keyword">function</span>(<span class="params"></span>) &#123;</span><br><span class="line">  <span class="comment">// 任务内容</span></span><br><span class="line">  <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&#x27;main minify&#x27;</span>);</span><br><span class="line">&#125;)</span><br><span class="line">gulp.<span class="title function_">task</span>(<span class="string">&#x27;uglify&#x27;</span>, <span class="keyword">function</span>(<span class="params"></span>) &#123;</span><br><span class="line">  <span class="comment">// 任务内容</span></span><br><span class="line">  <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&#x27;main uglify&#x27;</span>);</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line"><span class="comment">// &lt; 4.0版本</span></span><br><span class="line">gulp.<span class="title function_">watch</span>(<span class="string">&#x27;./page/**/*.js&#x27;</span>, [<span class="string">&#x27;uglify&#x27;</span>, <span class="string">&#x27;minify&#x27;</span>]);</span><br><span class="line"></span><br><span class="line"><span class="comment">// &gt; 4.0版本</span></span><br><span class="line">gulp.<span class="title function_">watch</span>(</span><br><span class="line">  <span class="string">&#x27;./page/**/*.js&#x27;</span></span><br><span class="line">  gulp.<span class="title function_">parallel</span>(</span><br><span class="line">    [<span class="string">&#x27;uglify&#x27;</span>, <span class="string">&#x27;minify&#x27;</span>]</span><br><span class="line">  )</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<h3 id="task"><a href="#task" class="headerlink" title="task()"></a>task()</h3><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"> gulp.<span class="title function_">task</span>(name[, deps], fn)</span><br><span class="line"> <span class="comment">// name - 任务名</span></span><br><span class="line"> <span class="comment">// deps - 当前任务所依赖的前置 =&gt; 当前任务会在所有依赖的指向完成后，被调用执行</span></span><br><span class="line"> <span class="comment">// fn - 执行函数</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// 批量执行/打包任务</span></span><br><span class="line"> gulp.<span class="title function_">task</span>(<span class="string">&#x27;js&#x27;</span>, <span class="keyword">function</span>(<span class="params"></span>) &#123;</span><br><span class="line">   <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&#x27;js&#x27;</span>);</span><br><span class="line"> &#125;)</span><br><span class="line"> gulp.<span class="title function_">task</span>(<span class="string">&#x27;es&#x27;</span>, <span class="keyword">function</span>(<span class="params"></span>) &#123;</span><br><span class="line">     <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&#x27;es&#x27;</span>);</span><br><span class="line"> &#125;)</span><br><span class="line"> gulp.<span class="title function_">task</span>(<span class="string">&#x27;webpack&#x27;</span>, <span class="keyword">function</span>(<span class="params"></span>) &#123;</span><br><span class="line">     <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&#x27;webpack&#x27;</span>);</span><br><span class="line"> &#125;)</span><br><span class="line"></span><br><span class="line"> gulp.<span class="title function_">task</span>(<span class="string">&#x27;main&#x27;</span>, gulp.<span class="title function_">parallel</span>(</span><br><span class="line">   [<span class="string">&#x27;js&#x27;</span>, <span class="string">&#x27;es&#x27;</span>, <span class="string">&#x27;webpack&#x27;</span>]</span><br><span class="line"> ))</span><br><span class="line"></span><br><span class="line"> <span class="comment">// 异步任务不会等待</span></span><br><span class="line"> gulp.<span class="title function_">task</span>(<span class="string">&#x27;async&#x27;</span>, <span class="title function_">funtion</span>(<span class="params"></span>) &#123;</span><br><span class="line">   <span class="title function_">setTimout</span>(<span class="keyword">function</span>(<span class="params"></span>) &#123;</span><br><span class="line">     <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&#x27;main async&#x27;</span>)</span><br><span class="line">   &#125;, <span class="number">1000</span>)</span><br><span class="line"> &#125;)</span><br></pre></td></tr></table></figure>
+<h2 id="webpack-gulp"><a href="#webpack-gulp" class="headerlink" title="webpack / gulp"></a>webpack / gulp</h2><ol>
+<li>执行粒度上</li>
+</ol>
+<ul>
+<li>webpack: 以功能依赖模块为粒度，区分 loaders 或 plugins</li>
+<li>gulp: 以任务为配置粒度，配置是将依赖、工具、功能抽象组装成任务，编排成任务流</li>
+</ul>
+<ol>
+<li>执行顺序上</li>
+</ol>
+<ul>
+<li>webpack: 以文件类型负责区域来网状构造项目，弱化顺序项目复杂程度</li>
+<li>gulp: 流式的方式串联每一项工具依赖，更适合作为自动化工具链来使用</li>
+</ul>
+<h2 id="工程化"><a href="#工程化" class="headerlink" title="工程化"></a>工程化</h2><h3 id="webpack-升级"><a href="#webpack-升级" class="headerlink" title="webpack 升级"></a>webpack 升级</h3><h4 id="v3-gt-v4"><a href="#v3-gt-v4" class="headerlink" title="v3 =&gt; v4"></a>v3 =&gt; v4</h4><ol>
+<li>零配置</li>
+</ol>
+<blockquote>
+<ul>
+<li>不强制依赖 webpack.config.js =&gt; 默认项: entry: ‘./src/index.js &amp; output: ‘./dist/main.js’</li>
+<li>wepack-cli 分离安装</li>
+</ul>
+</blockquote>
+<ol>
+<li>状态上</li>
+</ol>
+<blockquote>
+<ul>
+<li>提供 mode 区分 development &amp; production，提升开发编译效率，专注于编译产品</li>
+</ul>
+</blockquote>
+<ol>
+<li>scope hoisting</li>
+</ol>
+<blockquote>
+<ul>
+<li>作用域提升: 分析模块之间的依赖关系，将所有模块的代码按照顺序放在一个函数作用域中，减少函数闭包的数量，从而减小打包后的文件体积，提高代码的执行效率</li>
+<li>开启方式: Webpack 4 开始，默认开启，但需要使用 ES6 模块语法</li>
+</ul>
+</blockquote>
+<ol>
+<li>tree shaking</li>
+</ol>
+<blockquote>
+<ul>
+<li>摇树优化: 在打包过程中静态分析模块之间的导入和导出关系，找出那些没有被引用的代码 (死代码)，并将其从打包结果中移除，从而减小打包后的文件体积</li>
+<li>开启方式: ES6 模块语法 + production 自动开启</li>
+</ul>
+</blockquote>
+<ol>
+<li>细节配置差异</li>
+</ol>
+<blockquote>
+<ul>
+<li>commonChunkPlugin =&gt; splitChunks</li>
+<li>loaders =&gt; rules</li>
+<li>css loader 增加 use</li>
+<li>css-loader =&gt; style-loader =&gt; miniCssExtract.loader</li>
+</ul>
+</blockquote>
+<h4 id="v4-优化"><a href="#v4-优化" class="headerlink" title="v4 优化"></a>v4 优化</h4><blockquote>
+<p>对产品打包以及开发编译的速度做出了优化</p>
+</blockquote>
+<h4 id="v4-gt-v5"><a href="#v4-gt-v5" class="headerlink" title="v4 =&gt; v5"></a>v4 =&gt; v5</h4><ol>
+<li>持久化缓存: 阶段性编译结果存放如持久化缓存磁盘区域</li>
+</ol>
+<blockquote>
+<ul>
+<li>v4 需要使用插件，hard-source-webpack-plugin</li>
+<li>development，cache.type 默认被设置为 ‘memory’；production，默认开启，且 cache.type 通常建议设置为 ‘filesystem’</li>
+</ul>
+</blockquote>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">  <span class="attr">cache</span>: &#123;</span><br><span class="line">    <span class="attr">type</span>: <span class="string">&quot;fileSystem&quot;</span>,</span><br><span class="line">  &#125;,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>资源模块: 通过规整统一处理资源文件，优化资源文件引入的方式，直接与文件目标结合处理</li>
+</ol>
+<blockquote>
+<ul>
+<li>old: raw-loader、url-loader、file-loader</li>
+<li>new: asset/resource =&gt; file-loader、asset/inline =&gt; url-loader、asset/source =&gt; raw-loader</li>
+</ul>
+</blockquote>
+<ol>
+<li>打包优化</li>
+</ol>
+<blockquote>
+<ul>
+<li>tree-shaking: 跨模块 shaking</li>
+<li>splitchunk: 精细化配置</li>
+</ul>
+</blockquote>
+<ol>
+<li>代码压缩<blockquote>
+<p>自带 js 压缩功能，v4 需要下载安装 terser-webpack-plugin 插件</p>
+</blockquote>
+</li>
+</ol>
+<h4 id="v5-优化"><a href="#v5-优化" class="headerlink" title="v5 优化"></a>v5 优化</h4><blockquote>
+<p>进一步优化配置，优化编译速度以及包大小</p>
+</blockquote>
+<h3 id="webpack-插件"><a href="#webpack-插件" class="headerlink" title="webpack 插件"></a>webpack 插件</h3><h4 id="缓存加速"><a href="#缓存加速" class="headerlink" title="缓存加速"></a>缓存加速</h4><blockquote>
+<ul>
+<li>cache-loader，缓存耗时的工作</li>
+<li>terser-webpack-plugin / uglifyjs-webpack-loguin 的 cache 以及 parrallel</li>
+</ul>
+</blockquote>
+<h4 id="减肥瘦身"><a href="#减肥瘦身" class="headerlink" title="减肥瘦身"></a>减肥瘦身</h4><blockquote>
+<ul>
+<li>imagemin-webpack-plugin 批量压缩图片</li>
+<li>purifycss-wepack，删除未使用的 css 代码</li>
+<li>optimize-css-assets-webpack-plugin, 压缩 css</li>
+</ul>
+</blockquote>
+<h4 id="插件"><a href="#插件" class="headerlink" title="插件"></a>插件</h4><blockquote>
+<ul>
+<li>cleanWebpackPlugin，打包前清理上次项目生成的 bundle 文件</li>
+<li>happypack…</li>
+</ul>
+</blockquote>
+<h2 id="vite"><a href="#vite" class="headerlink" title="vite"></a>vite</h2><blockquote>
+<ul>
+<li>冷启动 / 冷服务: 开发状态下不重新走编译打包</li>
+<li>热更新: 更新源文件时依旧可以实时更新视图</li>
+<li>按需更新: 不刷新所有节点，只更新改动部分</li>
+</ul>
+</blockquote>
+<h3 id="vs-webpack"><a href="#vs-webpack" class="headerlink" title="vs webpack"></a>vs webpack</h3><blockquote>
+<p>webpack - 编译支撑开发</p>
+<ul>
+<li>打包生成 bundle =&gt; 启动 dev-server =&gt; 建立开发环境</li>
+<li>HMR =&gt; 改动到的模块以及相关依赖重新打包编译</li>
+</ul>
+<p>vite - 路由劫持 + 实时编译</p>
+<ul>
+<li>启动 dev-server =&gt; 直接请求所需模块并且实时编译（rollup js 模块打包器 AMD CJS =&gt; ESM）</li>
+<li>HMR =&gt; 让浏览器重新请求当前页面所需模块 =&gt; 利用浏览器的强缓存和协商缓存优化请求（源码模块协商缓存，依赖模块用强缓存）</li>
+</ul>
+<p>总结</p>
+</blockquote>
+<ol>
+<li>省去打包生成 bundle 过程</li>
+<li>通过 rollup 对模块进行按需实时编译</li>
+<li>利用缓存机制对不同模块进行缓存优化</li>
+</ol>
+<h3 id="dev-prod"><a href="#dev-prod" class="headerlink" title="dev / prod"></a>dev / prod</h3><blockquote>
+<p>dev: esbuilder</p>
+<ul>
+<li>依赖预构建 cjs / AMD =&gt; ESM</li>
+<li>依赖缓存到 node_modules/.vite</li>
+<li>package.json / lockfile / vite.config.js =&gt; 三者之一触发 =&gt; 重新预构建</li>
+<li>通过浏览器的缓存机制 =&gt; 缓存请求处理 =&gt; 提升页面性能</li>
+</ul>
+<p>prod: rollup</p>
+</blockquote>
+<h3 id="特性"><a href="#特性" class="headerlink" title="特性"></a>特性</h3><ul>
+<li>原生的 ts 支持</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;script lang=<span class="string">&quot;ts&quot;</span>&gt;&lt;/script&gt;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>原生的文件引入支持</li>
+</ul>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> <span class="string">&quot;./src/assets/reset.css&quot;</span>;</span><br><span class="line"><span class="keyword">import</span> <span class="string">&quot;./src/assets/mock.json&quot;</span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>新增依赖支持，vite.config.js</li>
+</ul>
+<h3 id="原理实践"><a href="#原理实践" class="headerlink" title="原理实践"></a>原理实践</h3><blockquote>
+<p>vite 缓存控制依赖模块，浏览器缓存控制静态资源、业务代码、js 文件等</p>
+</blockquote>
+<ol>
+<li>ESM 静态定义，编译时做加载 =&gt; 生成只读引用</li>
+<li>路由脚本进入只引用需要被加载模块 from 只读引用 =&gt; 实时编译运行包含依赖的代码</li>
+<li>浏览器缓存优化 =&gt; 分模块按需加载，未变化直接用缓存 / 模块变化只更新模块</li>
+</ol>
+<h2 id="主流构建工具"><a href="#主流构建工具" class="headerlink" title="主流构建工具"></a>主流构建工具</h2><h3 id="底层-JS-TS-转译器"><a href="#底层-JS-TS-转译器" class="headerlink" title="底层 JS/TS 转译器"></a>底层 JS/TS 转译器</h3><blockquote>
+<p>纯粹用于将 TypeScript/JavaScript/JSX 编译到某种特定运行环境下的底层转译器，代表有 BabelO(Js)、TSC(Ts)、esbuild(Go) 和 SWC(Rust) 等。虽然我将它们归类为转译器，但是它们大都也支持打包的能力，比如 esbuild 就把自己定位为打包器。</p>
+</blockquote>
+<h3 id="上层打包器"><a href="#上层打包器" class="headerlink" title="上层打包器"></a>上层打包器</h3><blockquote>
+<p>通常不会具备转译能力，而是借助上面提到的这些转译器来实现转移能力。它们更专注于完成一些范围更广、更加具体的打包任务。代表有 Webpack、Rollup、Parcel、esbuild、Snowpack、Vite、wmr、microbundle、tsup、tsdx、tsup 等。</p>
+</blockquote>
+<h4 id="dev-环境"><a href="#dev-环境" class="headerlink" title="dev 环境"></a>dev 环境</h4><ol>
+<li>通过监听源代码变化然后重新构建项目将打包后的代码推送到浏览器的传统模式</li>
+</ol>
+<ul>
+<li>Webpack+Babel</li>
+<li>Rollup: 通常打包第三方库</li>
+<li>Parcel: 和 Webpack 的功能类似，但是它简化了配置，号称零配置、开箱即用。Parcel 2 的 JS 转译器部分基于 SWC 进行开发，性能有很大提升。</li>
+</ul>
+<ol>
+<li>通过浏览器的原生 module 来实现动态打包的 bundleless 模式</li>
+</ol>
+<ul>
+<li>Snowpack: 最大的特点就是闪电般的速度。最终部署它会使用 Webpack/Parcel 插件。不过已经不再积极维护了</li>
+<li>Vite: 也是以速度著称，打包部分使用 Rollup，所以最终部署时打包体积相比 Snowpack 会更小。</li>
+<li>wmr: 非常轻量级的打包工具，它没有任何 npm 依赖。所以它没有 Snowpack 和 Vite 成熟，但是 wmr 更适合用在 Preact 或者一些简单的项目上</li>
+</ul>
+<h4 id="ts-打包器"><a href="#ts-打包器" class="headerlink" title="ts 打包器"></a>ts 打包器</h4><ul>
+<li>TSDX: 对自身的定位不是一个打包器那么简单，而是覆盖了一个 TypeScript 项目开发时所需的所有东西的零配置 CLI: Rollup、Jest、tsc、yarn、TSLint、VSCode……，有点 All in One 的感觉。</li>
+<li>tsup: 优势也是零配置，并且底层是使用 esbuild 作为支持的。</li>
+</ul>
+<h3 id="优缺点"><a href="#优缺点" class="headerlink" title="优缺点:"></a>优缺点:</h3><h4 id="Webpack"><a href="#Webpack" class="headerlink" title="Webpack"></a>Webpack</h4><ul>
+<li>热更新方面: webpack 支持 HMR，但是 webpack 需要全部重新编译并更新，效率较低</li>
+<li>tree-shaking: webpack2 开始支持且消除效果不好，但是 webpack5 有更好的 tree-shaking（去除未使用代码）</li>
+<li>分包方面: webpack 支持代码切割。（分包）</li>
+<li>ESM 打包: 现在 webpack 支持 es6module 输出</li>
+</ul>
+<h4 id="Rollup"><a href="#Rollup" class="headerlink" title="Rollup"></a>Rollup</h4><blockquote>
+<p>优点</p>
+</blockquote>
+<ul>
+<li>Rollup 是一款 ES Modules 打包器，从作用上来看，Rollup 与 Webpack 非常类似。不过相比于 Webpack，Rollup 要小巧的多，打包生成的文件更小。（识别 commonJs 需要插件）</li>
+<li>热更新: Rollup 不支持 HMR，在对 js 以外的模块的支持上不如 webpack，但是如果是打包纯 js 库例如 react，前期的 vue 的话，使用 rollup 是很合适的，打包的产物比较干净，没有 webpack 那么多工具函数</li>
+<li>Rollup 的插件机制设计得相对更干净简洁，单个模块的 resolve / load / transform 跟打包环节完全解耦，所以 Vite 才能在开发时模拟 Rollup 的插件机制，并且兼容大部分 Rollup 插件</li>
+<li>rollup 原生支持 tree-shaking</li>
+</ul>
+<blockquote>
+<p>缺点</p>
+</blockquote>
+<ul>
+<li>加载其他类型的资源文件或者支持导入 CommonJS 模块，又或是编译 ES 新特性，这些额外的需求 Rollup 需要使用插件去完成</li>
+<li>rollup 并不适合开发应用使用，因为需要使用第三方模块，而目前第三方模块大多数使用 CommonJs 方式导出成员，并且 rollup 不支持 HMR，使开发效率降低</li>
+</ul>
+<h4 id="Vite"><a href="#Vite" class="headerlink" title="Vite"></a>Vite</h4><blockquote>
+<p>组成: </p>
+<ul>
+<li>一个开发服务器，它基于 原生 ES 模块 提供了丰富的内建功能，如速度很快的 【模块热更新 HMR】</li>
+<li>一套构建指令，它使用 Rollup 打包你的代码，并且它是预配置的，可以输出用于生产环境的优化过的静态资源</li>
+</ul>
+<p>特点: </p>
+<ul>
+<li>快速的冷启动: vite 会直接启动开发服务器，不需要进行打包操作，所以不需要分析模块的依赖、不需要编译，因此启动速度非常快</li>
+<li>即时的模块热更新</li>
+<li>真正的按需编译: 利用现代浏览器支持 ES Module 的特性，当浏览器请求某个模块的时候，再根据需要对模块的内容进行编译，这种方式大大缩短了编译时间</li>
+</ul>
+<p>优点</p>
+</blockquote>
+<ol>
+<li>vite 热更新，实现按需编译，按模块更新。（快）</li>
+</ol>
+<ul>
+<li>在 Vite 中，HMR 是在原生 ESM 上执行的。当编辑一个文件时，Vite 只需要精确地使已编辑的模块与其最近的 HMR 边界之间的链失效，使 HMR 更新始终快速，无论应用的大小。</li>
+<li>Vite 同时利用 HTTP 头来加速整个页面的重新加载（再次让浏览器为我们做更多事情）: 源码模块的请求会根据 304 Not Modified 进行协商缓存，而依赖模块请求则会通过 Cache-Control: max-age=31536000,immutable 进行强缓存，因此一旦被缓存它们将不需要再次请求。</li>
+<li>热更新原理: 在热模块 HMR 方面，当修改一个模块的时候，仅需让浏览器重新请求该模块即可，无须像 webpack 那样需要把该模块的相关依赖模块全部编译一次，效率更高</li>
+</ul>
+<ol>
+<li>vite 在生产环境通过 Rollup 进行打包（特点: 打包体积小），生成 esm 模块包。（特点: 快）</li>
+</ol>
+<ul>
+<li>vite 在开发环境时，基于浏览器支持 esm，让浏览器解析模块，然后服务器按需编译返回。同时基于 esbuild（go）进行预构建打包不常变动的第三包，并用进行缓存。（缓存+快）</li>
+<li>Vite 使用 esbuild 预构建依赖。Esbuild 使用 Go 编写，并且比以 Node.js 编写的打包器预构建依赖快 10-100 倍。</li>
+</ul>
+<blockquote>
+<p>缺点</p>
+</blockquote>
+<ul>
+<li>生态: 生态不如 webpack，wepback 在于 loader 和 plugin 非常丰富</li>
+<li>prod 环境的构建: 目前用的 Rollup，原因在于 esbuild 对于 css 和代码分割不是很友好</li>
+<li>还没有被大规模使用,很多问题或者诉求没有真正暴露出来</li>
+</ul>
+<h2 id="前端测试"><a href="#前端测试" class="headerlink" title="前端测试"></a>前端测试</h2><h3 id="单元测试"><a href="#单元测试" class="headerlink" title="单元测试"></a>单元测试</h3><ol>
+<li>覆盖率: 测试案例覆盖的场景</li>
+</ol>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">top10</span>(<span class="params">number, sum</span>) &#123;</span><br><span class="line">  <span class="keyword">if</span> (number &lt; <span class="number">10</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> (sum += number);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> sum;</span><br><span class="line">&#125;</span><br><span class="line"><span class="title function_">top10</span>(<span class="number">8</span>);</span><br><span class="line"><span class="title function_">top10</span>(<span class="number">9</span>);</span><br><span class="line"><span class="comment">// 覆盖率 =&gt; 50%</span></span><br></pre></td></tr></table></figure>
+<ol>
+<li>单元拆分</li>
+</ol>
+<ul>
+<li>逻辑闭环的最小模块</li>
+<li>最小实现的视图组件</li>
+</ul>
+<ol>
+<li>环境准备</li>
+</ol>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 1. 依赖安装</span></span><br><span class="line">npm i --save-dev jest</span><br><span class="line">npm i @type/jest babel-jest @vue/test-utlis@next @testing-library/jest-dom ts-jest vue-jest @babel/preset-env --save-dev</span><br><span class="line"></span><br><span class="line"><span class="comment">// 2. 配置babel</span></span><br><span class="line"><span class="comment">// jest文件支持es6语法</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 3. 配置jest</span></span><br></pre></td></tr></table></figure>
+<h3 id="E2E-测试"><a href="#E2E-测试" class="headerlink" title="E2E 测试"></a>E2E 测试</h3><blockquote>
+<p>业务功能触发，不关注具体实现，只验证是否实现业务功能 =&gt; 开发 or 测试，例如 cypress 库</p>
+</blockquote>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://hinanyin.github.io">Linfeng.Wang</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://hinanyin.github.io/articles/engineering/packTools/">https://hinanyin.github.io/articles/engineering/packTools/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://hinanyin.github.io" target="_blank">Nanyin</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E5%B7%A5%E7%A8%8B%E5%8C%96/">工程化</a></div><div class="post-share"><div class="social-share" data-image="https://bu.dusays.com/2022/05/26/628fa0426213d.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><div class="post-reward"><div class="reward-button"><i class="fas fa-qrcode"></i>赞助</div><div class="reward-main"><ul class="reward-all"><li class="reward-item"><a href="/img/wechat.jpg" target="_blank"><img class="post-qr-code-img" src="/img/wechat.jpg" alt="wechat"/></a><div class="post-qr-code-desc">wechat</div></li><li class="reward-item"><a href="/img/alipay.jpg" target="_blank"><img class="post-qr-code-img" src="/img/alipay.jpg" alt="alipay"/></a><div class="post-qr-code-desc">alipay</div></li></ul></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="waline-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">Linfeng.Wang</div><div class="author-info-description">欲买桂花同载酒</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">24</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">14</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">4</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/hinanyin"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/hinanyin" target="_blank" title="Github"><i class="fab fa-github" style="color: #hdhfbb;"></i></a><a class="social-icon" href="/1561682937@qq.com" target="_blank" title="Email"><i class="fas fa-envelope" style="color: #000000;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">This is my Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#gulp"><span class="toc-number">1.</span> <span class="toc-text">gulp</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#src"><span class="toc-number">1.1.</span> <span class="toc-text">src()</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#pipe"><span class="toc-number">1.2.</span> <span class="toc-text">pipe()</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#dest"><span class="toc-number">1.3.</span> <span class="toc-text">dest()</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#watch"><span class="toc-number">1.4.</span> <span class="toc-text">watch()</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#task"><span class="toc-number">1.5.</span> <span class="toc-text">task()</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#webpack-gulp"><span class="toc-number">2.</span> <span class="toc-text">webpack &#x2F; gulp</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B7%A5%E7%A8%8B%E5%8C%96"><span class="toc-number">3.</span> <span class="toc-text">工程化</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#webpack-%E5%8D%87%E7%BA%A7"><span class="toc-number">3.1.</span> <span class="toc-text">webpack 升级</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#v3-gt-v4"><span class="toc-number">3.1.1.</span> <span class="toc-text">v3 &#x3D;&gt; v4</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#v4-%E4%BC%98%E5%8C%96"><span class="toc-number">3.1.2.</span> <span class="toc-text">v4 优化</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#v4-gt-v5"><span class="toc-number">3.1.3.</span> <span class="toc-text">v4 &#x3D;&gt; v5</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#v5-%E4%BC%98%E5%8C%96"><span class="toc-number">3.1.4.</span> <span class="toc-text">v5 优化</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#webpack-%E6%8F%92%E4%BB%B6"><span class="toc-number">3.2.</span> <span class="toc-text">webpack 插件</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BC%93%E5%AD%98%E5%8A%A0%E9%80%9F"><span class="toc-number">3.2.1.</span> <span class="toc-text">缓存加速</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%87%8F%E8%82%A5%E7%98%A6%E8%BA%AB"><span class="toc-number">3.2.2.</span> <span class="toc-text">减肥瘦身</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%8F%92%E4%BB%B6"><span class="toc-number">3.2.3.</span> <span class="toc-text">插件</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#vite"><span class="toc-number">4.</span> <span class="toc-text">vite</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#vs-webpack"><span class="toc-number">4.1.</span> <span class="toc-text">vs webpack</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#dev-prod"><span class="toc-number">4.2.</span> <span class="toc-text">dev &#x2F; prod</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%89%B9%E6%80%A7"><span class="toc-number">4.3.</span> <span class="toc-text">特性</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8E%9F%E7%90%86%E5%AE%9E%E8%B7%B5"><span class="toc-number">4.4.</span> <span class="toc-text">原理实践</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BB%E6%B5%81%E6%9E%84%E5%BB%BA%E5%B7%A5%E5%85%B7"><span class="toc-number">5.</span> <span class="toc-text">主流构建工具</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BA%95%E5%B1%82-JS-TS-%E8%BD%AC%E8%AF%91%E5%99%A8"><span class="toc-number">5.1.</span> <span class="toc-text">底层 JS&#x2F;TS 转译器</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%8A%E5%B1%82%E6%89%93%E5%8C%85%E5%99%A8"><span class="toc-number">5.2.</span> <span class="toc-text">上层打包器</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#dev-%E7%8E%AF%E5%A2%83"><span class="toc-number">5.2.1.</span> <span class="toc-text">dev 环境</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#ts-%E6%89%93%E5%8C%85%E5%99%A8"><span class="toc-number">5.2.2.</span> <span class="toc-text">ts 打包器</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BC%98%E7%BC%BA%E7%82%B9"><span class="toc-number">5.3.</span> <span class="toc-text">优缺点:</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Webpack"><span class="toc-number">5.3.1.</span> <span class="toc-text">Webpack</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Rollup"><span class="toc-number">5.3.2.</span> <span class="toc-text">Rollup</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Vite"><span class="toc-number">5.3.3.</span> <span class="toc-text">Vite</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E7%AB%AF%E6%B5%8B%E8%AF%95"><span class="toc-number">6.</span> <span class="toc-text">前端测试</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95"><span class="toc-number">6.1.</span> <span class="toc-text">单元测试</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#E2E-%E6%B5%8B%E8%AF%95"><span class="toc-number">6.2.</span> <span class="toc-text">E2E 测试</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/articles/vue/communication/" title="Vue 源码解析 组件通信"><img src="https://bu.dusays.com/2022/06/05/629c5257753d1.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Vue 源码解析 组件通信"/></a><div class="content"><a class="title" href="/articles/vue/communication/" title="Vue 源码解析 组件通信">Vue 源码解析 组件通信</a><time datetime="2025-02-28T06:37:37.000Z" title="发表于 2025-02-28 14:37:37">2025-02-28</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/articles/vue/keepAlive/" title="Vue 源码解析 keep-alive"><img src="https://bu.dusays.com/2022/05/29/62939662553c9.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Vue 源码解析 keep-alive"/></a><div class="content"><a class="title" href="/articles/vue/keepAlive/" title="Vue 源码解析 keep-alive">Vue 源码解析 keep-alive</a><time datetime="2025-02-28T06:17:09.000Z" title="发表于 2025-02-28 14:17:09">2025-02-28</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/articles/vue/directive/" title="Vue 源码解析 指令"><img src="https://bu.dusays.com/2022/05/26/628fa0426213d.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Vue 源码解析 指令"/></a><div class="content"><a class="title" href="/articles/vue/directive/" title="Vue 源码解析 指令">Vue 源码解析 指令</a><time datetime="2025-02-28T04:01:51.000Z" title="发表于 2025-02-28 12:01:51">2025-02-28</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/articles/vue/filter/" title="Vue 源码解析 过滤器"><img src="https://bu.dusays.com/2022/06/05/629c5257753d1.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Vue 源码解析 过滤器"/></a><div class="content"><a class="title" href="/articles/vue/filter/" title="Vue 源码解析 过滤器">Vue 源码解析 过滤器</a><time datetime="2025-02-28T03:43:53.000Z" title="发表于 2025-02-28 11:43:53">2025-02-28</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/articles/vue/global/" title="Vue 源码解析 全局方法"><img src="https://bu.dusays.com/2022/05/29/62939662553c9.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Vue 源码解析 全局方法"/></a><div class="content"><a class="title" href="/articles/vue/global/" title="Vue 源码解析 全局方法">Vue 源码解析 全局方法</a><time datetime="2025-02-27T10:03:39.000Z" title="发表于 2025-02-27 18:03:39">2025-02-27</time></div></div></div></div></div></div></main><footer id="footer" style="background: transparent;"><div id="footer-wrap"><div class="copyright">&copy;2025 By Linfeng.Wang</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">I wish you to become your own sun, no need to rely on who's light</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><div class="js-pjax"><script>(() => {
+  let initFn = window.walineFn || null
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = {"requiredMeta":["nick","mail"],"locale":{"placeholder":"昵称和邮箱为必填项，为了您能及时收到相关回复的邮件通知，请确保邮箱的正确性！"},"emoji":["//unpkg.com/@waline/emojis@1.2.0/bmoji","//unpkg.com/@waline/emojis@1.2.0/bilibili"],"search":true}
+
+  const destroyWaline = ele => ele.destroy()
+
+  const initWaline = (Fn, el = document, path = window.location.pathname) => {
+    const waline = Fn({
+      el: el.querySelector('#waline-wrap'),
+      serverURL: 'https://waline-ruddy-seven.vercel.app/',
+      pageview: true,
+      dark: 'html[data-theme="dark"]',
+      comment: true,
+      ...option,
+      path: isShuoshuo ? path : (option && option.path) || path
+    })
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyWaline = () => {
+        destroyWaline(waline)
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const loadWaline = (el, path) => {
+    if (initFn) initWaline(initFn, el, path)
+    else {
+      btf.getCSS('https://cdn.jsdelivr.net/npm/@waline/client/dist/waline.min.css')
+        .then(() => import('https://cdn.jsdelivr.net/npm/@waline/client/dist/waline.min.js'))
+        .then(({ init }) => {
+          initFn = init || Waline.init
+          initWaline(initFn, el, path)
+          window.walineFn = initFn
+        })
+    }
+  }
+
+  if (isShuoshuo) {
+    'Waline' === 'Waline'
+      ? window.shuoshuoComment = { loadComment: loadWaline } 
+      : window.loadOtherComment = loadWaline
+    return
+  }
+
+  if ('Waline' === 'Waline' || !false) {
+    if (false) btf.loadComment(document.getElementById('waline-wrap'),loadWaline)
+    else setTimeout(loadWaline, 0)
+  } else {
+    window.loadOtherComment = loadWaline
+  }
+})()</script></div><script defer src="https://cdn.jsdelivr.net/combine/npm/jquery@latest/dist/jquery.min.js,gh/weilining/jsdelivr/jquery/circlemagic/circlemagic.min.js,gh/weilining/jsdelivr@latest/jquery/circlemagic/butterflycirclemagic.js"></script><script defer src="//clustrmaps.com/globe.js?d=5V2tOKp8qAdRM-i8eu7ETTO9ugt5uKbbG-U7Yj8uMl8"></script><script defer src="/live2d-widget/autoload.js"></script><meting-js class="no-destroy" id="8932390" server="netease" type="playlist" fixed="true" autoplay="false" order="random" volume="0.3" list-folded="false" list-max-height="36vh"> </meting-js><script async src="/js/grayscale.js"></script><script id="canvas_nest" defer="defer" color="0,0,255" opacity="0.7" zIndex="-1" count="99" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-nest.min.js"></script><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/activate-power-mode.min.js"></script><script>POWERMODE.colorful = true;
+POWERMODE.shake = true;
+POWERMODE.mobile = false;
+document.body.addEventListener('input', POWERMODE);
+</script><script id="click-show-text" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/click-show-text.min.js" data-mobile="false" data-text="I,LOVE,YOU" data-fontsize="15px" data-random="false" async="async"></script><link rel="stylesheet" href="https://npm.elemecdn.com/aplayer/dist/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://npm.elemecdn.com/aplayer/dist/APlayer.min.js"></script><script src="https://npm.elemecdn.com/meting/dist/Meting.min.js"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索" type="text"/></div></div><hr/><div id="local-search-results"></div><div id="local-search-stats-wrap"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></div><!-- hexo injector body_end start --><script data-pjax>
+  function butterfly_footer_beautify_injector_config(){
+    var parent_div_git = document.getElementById('footer-wrap');
+    var item_html = '<div id="workboard"></div><p id="ghbdages"><a class="github-badge" target="_blank" href="https://hexo.io/" style="margin-inline:5px" data-title="博客框架为Hexo_v5.4.0" title=""><img src="https://img.shields.io/badge/Frame-Hexo-blue?style=flat&amp;logo=hexo" alt=""/></a><a class="github-badge" target="_blank" href="https://butterfly.js.org/" style="margin-inline:5px" data-title="主题版本Butterfly_v3.8.2" title=""><img src="https://img.shields.io/badge/Theme-Butterfly-6513df?style=flat&amp;logo=bitdefender" alt=""/></a><a class="github-badge" target="_blank" href="https://www.jsdelivr.com/" style="margin-inline:5px" data-title="本站使用JsDelivr为静态资源提供CDN加速" title=""><img src="https://img.shields.io/badge/CDN-jsDelivr-orange?style=flat&amp;logo=jsDelivr" alt=""/></a><a class="github-badge" target="_blank" href="https://vercel.com/" style="margin-inline:5px" data-title="本站采用双线部署，默认线路托管于Vercel" title=""><img src="https://img.shields.io/badge/Hosted-Vercel-brightgreen?style=flat&amp;logo=Vercel" alt=""/></a><a class="github-badge" target="_blank" href="https://vercel.com/" style="margin-inline:5px" data-title="本站采用双线部署，联通线路托管于Coding" title=""><img src="https://img.shields.io/badge/Hosted-Coding-0cedbe?style=flat&amp;logo=Codio" alt=""/></a><a class="github-badge" target="_blank" href="https://github.com/" style="margin-inline:5px" data-title="本站项目由Github托管" title=""><img src="https://img.shields.io/badge/Source-Github-d021d6?style=flat&amp;logo=GitHub" alt=""/></a><a class="github-badge" target="_blank" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" style="margin-inline:5px" data-title="本站采用知识共享署名-非商业性使用-相同方式共享4.0国际许可协议进行许可" title=""><img src="https://img.shields.io/badge/Copyright-BY--NC--SA%204.0-d42328?style=flat&amp;logo=Claris" alt=""/></a></p>';
+    console.log('已挂载butterfly_footer_beautify')
+    parent_div_git.insertAdjacentHTML("beforeend",item_html)
+    }
+  var elist = 'null'.split(',');
+  var cpage = location.pathname;
+  var epage = 'all';
+  var flag = 0;
+
+  for (var i=0;i<elist.length;i++){
+    if (cpage.includes(elist[i])){
+      flag++;
+    }
+  }
+
+  if ((epage ==='all')&&(flag == 0)){
+    butterfly_footer_beautify_injector_config();
+  }
+  else if (epage === cpage){
+    butterfly_footer_beautify_injector_config();
+  }
+  </script><script async src="/js/footer-beautify-runtime.js"></script><!-- hexo injector body_end end --></body></html>

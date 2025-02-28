@@ -1,0 +1,7 @@
+#page-header {
+  background: transparent;
+  background-image: none !important;
+}
+#page-header:not(.not-top-img):before {
+  background-color: transparent;
+}

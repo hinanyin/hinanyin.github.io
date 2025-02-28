@@ -1,0 +1,521 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>浏览器性能优化 | Nanyin</title><meta name="author" content="Linfeng.Wang"><meta name="copyright" content="Linfeng.Wang"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="Navigation Timing   navigationStart   前一个文档卸载时间戳 &#x3D;&gt; 无上一层页面时，从 fetchStart 开始   unloadEventStart &#x2F; unloadEventEnd   与前一个网页 unload 时的时间戳 &#x3D;&gt; 无上一个网页，默认 0执行完毕的时间戳   redirectStart &#x2F; redirectEnd   通常用来计">
+<meta property="og:type" content="article">
+<meta property="og:title" content="浏览器性能优化">
+<meta property="og:url" content="https://hinanyin.github.io/articles/engineering/browser/index.html">
+<meta property="og:site_name" content="Nanyin">
+<meta property="og:description" content="Navigation Timing   navigationStart   前一个文档卸载时间戳 &#x3D;&gt; 无上一层页面时，从 fetchStart 开始   unloadEventStart &#x2F; unloadEventEnd   与前一个网页 unload 时的时间戳 &#x3D;&gt; 无上一个网页，默认 0执行完毕的时间戳   redirectStart &#x2F; redirectEnd   通常用来计">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://bu.dusays.com/2022/06/05/629c5257753d1.png">
+<meta property="article:published_time" content="2025-02-26T03:40:58.000Z">
+<meta property="article:modified_time" content="2025-02-28T06:12:45.435Z">
+<meta property="article:author" content="Linfeng.Wang">
+<meta property="article:tag" content="浏览器">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://bu.dusays.com/2022/06/05/629c5257753d1.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "浏览器性能优化",
+  "url": "https://hinanyin.github.io/articles/engineering/browser/",
+  "image": "https://bu.dusays.com/2022/06/05/629c5257753d1.png",
+  "datePublished": "2025-02-26T03:40:58.000Z",
+  "dateModified": "2025-02-28T06:12:45.435Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "Linfeng.Wang",
+      "url": "https://hinanyin.github.io/"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.ico"><link rel="canonical" href="https://hinanyin.github.io/articles/engineering/browser/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//fonts.googleapis.com" crossorigin=""/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          const mediaQueryDark = window.matchMedia('(prefers-color-scheme: dark)')
+          const mediaQueryLight = window.matchMedia('(prefers-color-scheme: light)')
+          
+          if (theme === undefined) {
+            if (mediaQueryLight.matches) activateLightMode()
+            else if (mediaQueryDark.matches) activateDarkMode()
+            else {
+              const hour = new Date().getHours()
+              const isNight = hour <= 6 || hour >= 18
+              isNight ? activateDarkMode() : activateLightMode()
+            }
+            mediaQueryDark.addEventListener('change', () => {
+              if (saveToLocal.get('theme') === undefined) {
+                e.matches ? activateDarkMode() : activateLightMode()
+              }
+            })
+          } else {
+            theme === 'light' ? activateLightMode() : activateDarkMode()
+          }
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web&amp;display=swap" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"languages":{"hits_empty":"未找到符合您查询的内容: ${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"簡"},
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: true,
+    post: true
+  },
+  runtime: '天',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: {"limitCount":50,"languages":{"author":"作者: Linfeng.Wang","link":"链接: ","source":"来源: Nanyin","info":"著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。"}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"已切换为繁体中文","cht_to_chs":"已切换为简体中文","day_to_night":"已切换为深色模式","night_to_day":"已切换为浅色模式","bgLight":"#49b1f5","bgDark":"#2d3035","position":"bottom-left"},
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: true,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  },
+  autoDarkmode: true
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '浏览器性能优化',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/modify.css"><!-- hexo injector head_end start --><link rel="stylesheet" href="/css/footer-beautify-runtime.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://unpkg.zhimg.com/hexo-butterfly-tag-plugins-plus@latest/lib/assets/font-awesome-animation.min.css" media="defer" onload="this.media='all'"><link rel="stylesheet" href="https://npm.elemecdn.com/hexo-butterfly-tag-plugins-plus@latest/lib/tag_plugins.css" media="defer" onload="this.media='all'"><!-- hexo injector head_end end --><meta name="generator" content="Hexo 7.3.0"></head><body><div id="web_bg" style="background-image: url(/img/index_bg.jpg);"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">24</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">14</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">4</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博文</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/shuoshuo/"><i class="fa-fw fa fa-comment"></i><span> 分享</span></a></li><li><a class="site-page child" href="/gallery/"><i class="fa-fw fa fa-camera-retro"></i><span> 相册</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 影视</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(https://bu.dusays.com/2022/06/05/629c5257753d1.png);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">Nanyin</span></a><a class="nav-page-title" href="/"><span class="site-name">浏览器性能优化</span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博文</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/shuoshuo/"><i class="fa-fw fa fa-comment"></i><span> 分享</span></a></li><li><a class="site-page child" href="/gallery/"><i class="fa-fw fa fa-camera-retro"></i><span> 相册</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 影视</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">浏览器性能优化</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2025-02-26T03:40:58.000Z" title="发表于 2025-02-26 11:40:58">2025-02-26</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2025-02-28T06:12:45.435Z" title="更新于 2025-02-28 14:12:45">2025-02-28</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E5%89%8D%E7%AB%AF/">前端</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E5%89%8D%E7%AB%AF/%E5%B7%A5%E7%A8%8B%E5%8C%96/">工程化</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">3k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>10分钟</span></span><span class="post-meta-separator">|</span><span id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span class="waline-pageview-count" data-path="/articles/engineering/browser/"><i class="fa-solid fa-spinner fa-spin"></i></span></span><span class="post-meta-separator">|</span><span class="post-meta-commentcount"><i class="far fa-comments fa-fw post-meta-icon"></i><span class="post-meta-label">评论数:</span><a href="/articles/engineering/browser/#post-comment"><span class="waline-comment-count" data-path="/articles/engineering/browser/"><i class="fa-solid fa-spinner fa-spin"></i></span></a></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><div id="post-outdate-notice" data="{&quot;limitDay&quot;:365,&quot;messagePrev&quot;:&quot;It has been&quot;,&quot;messageNext&quot;:&quot;days since the last update, the content of the article may be outdated.&quot;,&quot;postUpdate&quot;:&quot;2025-02-28 14:12:45&quot;}" hidden></div><h2 id="Navigation-Timing"><a href="#Navigation-Timing" class="headerlink" title="Navigation Timing"></a>Navigation Timing</h2><p><img src="/images/engineering/browser_1.png" alt=""></p>
+<p><img src="/images/engineering/browser_2.png" alt=""></p>
+<ol>
+<li>navigationStart</li>
+</ol>
+<blockquote>
+<p>前一个文档卸载时间戳 =&gt; 无上一层页面时，从 fetchStart 开始</p>
+</blockquote>
+<ol>
+<li>unloadEventStart / unloadEventEnd</li>
+</ol>
+<blockquote>
+<p>与前一个网页 unload 时的时间戳 =&gt; 无上一个网页，默认 0<br>执行完毕的时间戳</p>
+</blockquote>
+<ol>
+<li>redirectStart / redirectEnd</li>
+</ol>
+<blockquote>
+<p>通常用来计算 redirect 完成的时间</p>
+</blockquote>
+<ol>
+<li>worker</li>
+</ol>
+<blockquote>
+<p>worker 初始化时间</p>
+</blockquote>
+<ol>
+<li>fetchStart</li>
+</ol>
+<blockquote>
+<p>整个全新开始页面的 start<br>浏览器网络层 ready 的时间</p>
+</blockquote>
+<ol>
+<li>domainInLookupStart / domainInLookupEnd</li>
+</ol>
+<blockquote>
+<p>DNS 连接的开始结束</p>
+</blockquote>
+<ol>
+<li>connectStart / connectEnd</li>
+</ol>
+<blockquote>
+<p>TCP 连接的开始结束</p>
+<ul>
+<li><code>connectEnd</code> - <code>domainInLookupStart</code> 为网络的建立连接过程</li>
+<li><code>secureConnectionStart</code>: 若使用 https 会有此过程，建立安全链接</li>
+</ul>
+</blockquote>
+<ol>
+<li>requestStart / responseEnd</li>
+</ol>
+<blockquote>
+<p>整个请求的发起开始到完成接收耗时</p>
+</blockquote>
+<h2 id="Processing"><a href="#Processing" class="headerlink" title="Processing"></a>Processing</h2><blockquote>
+<p>纯前端可做的性能优化，主要集中在 dom 渲染过程中</p>
+</blockquote>
+<ol>
+<li>domLoading</li>
+</ol>
+<blockquote>
+<p>开始解析渲染 dom 树的事件 =&gt; readyStateChange</p>
+</blockquote>
+<ol>
+<li>domInterActive</li>
+</ol>
+<blockquote>
+<p>完成了 dom 树的解析 =&gt; readyStateChange =&gt; 只是完成了 dom 树的解析，并没有开始加载网页资源 (async/defer)</p>
+<ul>
+<li><code>domInterActive</code> - <code>domLoading</code> 为解析 dom 树的时间</li>
+</ul>
+</blockquote>
+<ol>
+<li>domContentLoaddedEventStart / domContentLoaddedEventEnd</li>
+</ol>
+<blockquote>
+<p>Dom 树解析完成后，资源的加载</p>
+</blockquote>
+<ol>
+<li>domComplete</li>
+</ol>
+<blockquote>
+<p>Dom 树 ready</p>
+<ul>
+<li><code>domComplete</code> - <code>domLoading</code> 为整个 dom 树初始化所需要的时间</li>
+</ul>
+</blockquote>
+<ol>
+<li>loadEventStart / loadEventEnd</li>
+</ol>
+<blockquote>
+<p>执行脚本开始与结束</p>
+</blockquote>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;script&gt;</span><br><span class="line">  <span class="attr">javascript</span>:(<span class="function">() =&gt;</span> &#123;</span><br><span class="line">  	<span class="keyword">const</span> performance = <span class="variable language_">window</span>.<span class="property">performance</span>.<span class="property">timing</span>;</span><br><span class="line">  	<span class="keyword">const</span> pageLoadTime = performance.<span class="property">loadEventEnd</span> - performance.<span class="property">navigationStart</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 打印、上报、存储</span></span><br><span class="line">    <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&#x27;当前页面加载耗时: &#x27;</span>, pageLoadTime, <span class="string">&#x27;ms&#x27;</span>);</span><br><span class="line">  &#125;)()</span><br><span class="line">&lt;/script&gt;</span><br></pre></td></tr></table></figure>
+<h2 id="W3C-Paint-Timing"><a href="#W3C-Paint-Timing" class="headerlink" title="W3C Paint Timing"></a>W3C Paint Timing</h2><blockquote>
+<p>新时代下的指标</p>
+</blockquote>
+<ol>
+<li>DCL(DOMContentLoad): HTML 加载完成时间</li>
+<li>L(onLoad): 页面所有资源加载完成时间</li>
+</ol>
+<blockquote>
+<p>performance.getEntriesByType(‘paint’) 获取以下两个时间点的值</p>
+</blockquote>
+<ol>
+<li>FP(First Paint): 页面在导航后首次呈现出不同于导航前内容的时间点</li>
+<li>FCP(Fisrt Contentful Paint): 首次绘制任何文本、图像、非空白 canvas 或 svg 的时间点</li>
+<li>FMP(First Meaningful Paint): 首次绘制页面“主要内容”的时间点</li>
+<li>LCP(Largest Contentful Paint): 可视区域“内容”最大的可见元素开始出现在页面上的时间点</li>
+<li>CLS(Cumulative Layout Shift): 表示用户经历的意外 layout 的频率</li>
+<li>TBT(Total Blocking Time): 表示从 FCP 到 TTI(可交互时间 Time to Interactive) 之间所有 long task 的阻塞时间之和</li>
+</ol>
+<h2 id="Core-Web-Vitals"><a href="#Core-Web-Vitals" class="headerlink" title="Core Web Vitals"></a>Core Web Vitals</h2><blockquote>
+<p>CWV 网页核心性能指标<br>加载、交互、视觉稳定 —— 代表不同方向的衡量标准 + 可衡量且接近真是体验的数据化参数</p>
+</blockquote>
+<h3 id="Largest-Contentful-Paint-LCP"><a href="#Largest-Contentful-Paint-LCP" class="headerlink" title="Largest Contentful Paint(LCP)"></a>Largest Contentful Paint(LCP)</h3><blockquote>
+<p>衡量装载的性能<br>页面加载前 2.5s 内，必须要进行最大内容的渲染</p>
+</blockquote>
+<ol>
+<li>什么是最大内容</li>
+</ol>
+<ul>
+<li>图片 <code>&lt;image&gt;</code>、<code>&lt;img&gt;</code>、<code>&lt;svg&gt;</code></li>
+<li>视频 <code>&lt;video&gt;</code></li>
+<li>通过 url 加载内容的模块 (例如 background 为 url)</li>
+<li>主要文本模块以及其内联模块</li>
+</ul>
+<ol>
+<li>LCP 值低下的原因及解决方案</li>
+</ol>
+<ul>
+<li>资源慢: 使用缓存 =&gt; 强缓存 + 协商缓存</li>
+<li>渲染被阻断: 简化结构与逻辑 + 内联、合并方式简化整体解析逻辑</li>
+<li>资源交互: 图片分类 =&gt; 1. 图片上传 2. 云资源管理</li>
+<li>静态资源: CDN</li>
+</ul>
+<h3 id="First-Input-Delay-FID"><a href="#First-Input-Delay-FID" class="headerlink" title="First Input Delay(FID)"></a>First Input Delay(FID)</h3><blockquote>
+<p>衡量交互体验<br>页面首次输入延迟小于 100ms</p>
+</blockquote>
+<ol>
+<li>减少 JS 的执行时间</li>
+</ol>
+<ul>
+<li>优化算法</li>
+<li>尽量减少 JS 的占用:  空间 + 时间</li>
+<li>首屏加载:  1. 服务端渲染 2. 预加载、懒加载</li>
+</ul>
+<ol>
+<li>解决长任务问题</li>
+</ol>
+<ul>
+<li>阻塞渲染 50ms 以上:  尽量拆分，或者交互弥补</li>
+</ul>
+<ol>
+<li>提升性能来帮助提速</li>
+</ol>
+<ul>
+<li>JS workers: Web worker | service worker | worklet</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* main.js */</span></span><br><span class="line"><span class="comment">// 新增一个worker</span></span><br><span class="line"><span class="keyword">const</span> worker = <span class="keyword">new</span> <span class="title class_">Worker</span>(<span class="string">&quot;worker.js&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// main thread 通信</span></span><br><span class="line">worker.<span class="title function_">postMessage</span>(<span class="string">&quot;Come on &amp; work~&quot;</span>);</span><br><span class="line">worker.<span class="property">onmessage</span> = <span class="keyword">function</span> (<span class="params">e</span>) &#123;</span><br><span class="line">  <span class="variable language_">console</span>.<span class="title function_">log</span>(e.<span class="property">data</span>);</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* worker.js */</span></span><br><span class="line">self.<span class="property">onmessage</span> = <span class="keyword">function</span> (<span class="params">e</span>) &#123;</span><br><span class="line">  <span class="variable language_">console</span>.<span class="title function_">log</span>(e.<span class="property">data</span>);</span><br><span class="line">  <span class="comment">// 回调主人喊话 =&gt; 业务逻辑</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 完成后发给main</span></span><br><span class="line">  self.<span class="title function_">postMessage</span>(<span class="comment">/* 业务逻辑 */</span>);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// service worker - 网络 + 内存</span></span><br><span class="line"> <span class="comment">/* main.js */</span></span><br><span class="line"> navigator.<span class="property">seviceWorker</span>.<span class="title function_">register</span>(<span class="string">&#x27;service-worker.js&#x27;</span>);</span><br><span class="line"></span><br><span class="line"> <span class="comment">/* service-worker.js */</span></span><br><span class="line"> self.<span class="title function_">addEventLister</span>(<span class="string">&quot;install&quot;</span>, <span class="keyword">function</span>(<span class="params"></span>) &#123;&#125;);</span><br><span class="line"> self.<span class="title function_">addEventLister</span>(<span class="string">&quot;activate&quot;</span>, <span class="keyword">function</span>(<span class="params"></span>) &#123;&#125;);</span><br><span class="line"> self.<span class="title function_">addEventLister</span>(<span class="string">&quot;fetch&quot;</span>, <span class="keyword">function</span>(<span class="params">e</span>) &#123;</span><br><span class="line">     e.<span class="title function_">respondwith</span>(</span><br><span class="line">         caches.<span class="title function_">match</span>(event.<span class="property">request</span>);</span><br><span class="line">     )</span><br><span class="line"> &#125;);</span><br></pre></td></tr></table></figure>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 浏览器概念流程:  JS =&gt; style =&gt; layout =&gt; paint =&gt; composite</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* main.js */</span></span><br><span class="line"><span class="variable constant_">CSS</span>.<span class="property">paintWorklet</span>.<span class="title function_">addModule</span>(<span class="string">&#x27;worklet.js&#x27;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">/* worklet.js */</span></span><br><span class="line"><span class="title function_">registerPaint</span>(<span class="string">&#x27;myGradient&#x27;</span>, <span class="keyword">class</span> &#123;</span><br><span class="line">    <span class="title function_">paint</span>(<span class="params">ctx, size, prop</span>) &#123;</span><br><span class="line">        <span class="keyword">var</span> gradient = ctx.<span class="title function_">createLinearGradient</span>(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, size.<span class="property">height</span> - <span class="number">5</span>);</span><br><span class="line"></span><br><span class="line">        gradient.<span class="title function_">addColorStop</span>(<span class="number">0</span>, <span class="string">&quot;black&quot;</span>);</span><br><span class="line">        gradient.<span class="title function_">addColorStop</span>(<span class="number">1</span>, <span class="string">&quot;white&quot;</span>);</span><br><span class="line"></span><br><span class="line">        ctx.<span class="property">fillStyle</span> = gradient;</span><br><span class="line">        ctx.<span class="title function_">fillRect</span>(<span class="number">0</span>, <span class="number">0</span>, size.<span class="property">width</span>, size.<span class="property">height</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line"><span class="comment">/* app */</span></span><br><span class="line">.<span class="property">content</span> &#123;</span><br><span class="line">    background-<span class="attr">image</span>: <span class="title function_">paint</span>(myGradient);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="Cumulative-Layout-Shift-CLS"><a href="#Cumulative-Layout-Shift-CLS" class="headerlink" title="Cumulative Layout Shift(CLS)"></a>Cumulative Layout Shift(CLS)</h3><blockquote>
+<p>衡量视觉稳定性<br>页面要保持 CLS 小于 0.1: 可见元素从前一帧到后一帧改变位置的动作</p>
+</blockquote>
+<ol>
+<li>不使用无尺寸元素</li>
+</ol>
+<blockquote>
+<p>srcset &amp; sizes: 根据屏幕自适应，多用于移动端，效果如 web 端的 media</p>
+</blockquote>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">img</span></span></span><br><span class="line"><span class="tag">  <span class="attr">srcset</span>=<span class="string">&quot;width-320w.jpg 320w, width-480w.jpg 480w, width-800w.jpg 800w&quot;</span></span></span><br><span class="line"><span class="tag">  <span class="attr">sizes</span>=<span class="string">&quot;(max-width: 320px) 300px, (max-width: 480px) 440px, 800px&quot;</span></span></span><br><span class="line"><span class="tag">/&gt;</span></span><br></pre></td></tr></table></figure>
+<ol>
+<li>减少内容内部的插入</li>
+</ol>
+<blockquote>
+<p>影响到整体的布局</p>
+</blockquote>
+<ol>
+<li>字体控制</li>
+</ol>
+<h3 id="CWV-工具"><a href="#CWV-工具" class="headerlink" title="CWV 工具"></a>CWV 工具</h3><blockquote>
+<p>Core Web Vitals Annotations</p>
+</blockquote>
+<h2 id="性能评估指标-performance"><a href="#性能评估指标-performance" class="headerlink" title="性能评估指标 - performance"></a>性能评估指标 - performance</h2><h3 id="页面性能评估参考指标"><a href="#页面性能评估参考指标" class="headerlink" title="页面性能评估参考指标:"></a>页面性能评估参考指标:</h3><ol>
+<li>FPS、CPU、网络请求</li>
+<li>网络任务队列</li>
+<li>JS 消耗时间、性能占用</li>
+<li>浏览器绘制页面的帧布局</li>
+</ol>
+<h3 id="工程化监控体系"><a href="#工程化监控体系" class="headerlink" title="工程化监控体系"></a>工程化监控体系</h3><ol>
+<li>上报 =&gt; 信息采集 =&gt; 数据回收 =&gt; 获取场景数据</li>
+<li>数据分析 =&gt; timing 节点计算 =&gt; 阈值设置 + 数据分类 + 数据重组</li>
+<li>可视化展示<blockquote>
+<p>一些埋点工具流程参考: growing.io (采集上报) =&gt; fineBi / powerBi (数据分析) =&gt; grafana (数据展示看板) =&gt; 钉钉、企业微信、飞书 webhook (监控信息告警)</p>
+</blockquote>
+</li>
+</ol>
+<h3 id="性能优化的另一种可能-bigpipe-——-页面分解成若干的-pagelet"><a href="#性能优化的另一种可能-bigpipe-——-页面分解成若干的-pagelet" class="headerlink" title="性能优化的另一种可能:  bigpipe —— 页面分解成若干的 pagelet"></a>性能优化的另一种可能:  bigpipe —— 页面分解成若干的 pagelet</h3><ol>
+<li>服务前端接收客户端请求</li>
+<li>node 生成 HTML * n =&gt; 若干个 pagelet</li>
+<li>浏览器获取到 pagelet 后开始加载资源做 layout paint</li>
+<li>客户端整合形成页面</li>
+</ol>
+<h3 id="MVVM-优化"><a href="#MVVM-优化" class="headerlink" title="MVVM 优化"></a>MVVM 优化</h3><ol>
+<li>自身特性优化<br>vue - template<br>react - dom diff</li>
+<li>技巧上的优化</li>
+</ol>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">setNewState = <span class="function"><span class="params">e</span> =&gt;</span> &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="title function_">setSate</span>(&#123;</span><br><span class="line">        <span class="comment">/* */</span></span><br><span class="line">    &#125;)</span><br><span class="line">&#125;</span><br><span class="line"><span class="title function_">render</span>(<span class="params"></span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> (</span><br><span class="line">        <span class="comment">// 每点击一次新生成一个方法示例</span></span><br><span class="line">        <span class="language-xml"><span class="tag">&lt;<span class="name">div</span> <span class="attr">onClick</span>=<span class="string">&#123;e</span> =&gt;</span> &#123; this.setState(/* ^ */) &#125;&#125;&gt;<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span></span><br><span class="line"></span><br><span class="line">      	<span class="comment">// 优化</span></span><br><span class="line">        <span class="language-xml"><span class="tag">&lt;<span class="name">div</span> <span class="attr">onClick</span>=<span class="string">&#123;this.setNewState&#125;</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span></span><br><span class="line">    )</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">	<span class="comment">// computed代替watch</span></span><br><span class="line"><span class="attr">computed</span>: &#123;</span><br><span class="line">      <span class="title function_">preData</span>(<span class="params">data</span>) &#123;</span><br><span class="line">          <span class="keyword">return</span> <span class="string">&#x27;123&#x27;</span> + data;</span><br><span class="line">      &#125;</span><br><span class="line">  &#125;,</span><br><span class="line"></span><br><span class="line">  <span class="attr">data</span>: <span class="keyword">function</span>(<span class="params"></span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> &#123;</span><br><span class="line">          <span class="attr">preData</span>: <span class="string">&#x27;123&#x27;</span></span><br><span class="line">      &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="attr">watch</span>: &#123;</span><br><span class="line">      <span class="title function_">preData</span>(<span class="params">data</span>) &#123;</span><br><span class="line">          <span class="variable language_">this</span>.<span class="property">preData</span> = <span class="string">&#x27;123&#x27;</span> + data;</span><br><span class="line">      &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<h3 id="首屏方案选择"><a href="#首屏方案选择" class="headerlink" title="首屏方案选择"></a>首屏方案选择</h3><blockquote>
+<p>几个方案的实现都依赖于 MutationObserver API 用于监听 DOM 变动</p>
+<ul>
+<li>在页面加载中 初始化 MutationObserver, 当每一次页面发生变化时，会去判断页面是不是一次有意义的变化，例如变化的标签是不是一些有意义需要统计的标签，例如 meta link script 这类标签就认为这一次变动是无意义的，无需后面的步骤</li>
+<li>然后会记录下发生变化的时间，以及通过 setTag 给此次变化的 DOM 打上标记</li>
+<li>一个简单的递归 DOM 树，为每一个在屏幕范围内具有大小的可见元素进行标记，一旦发现父级不满足要求就不会向下递归</li>
+</ul>
+</blockquote>
+<p><img src="/images/engineering/browser_3.png" alt=""></p>
+<ol>
+<li>首屏内加载最慢的图片: 监听首屏内所有图片的 onload 事件，获取图片 onload 时间的最大值，即可获得近似的首屏时间。</li>
+<li>页面的 DOM 树第一次稳定: 这个方案想要比较好的实现比较有难度，并且精确度值得商榷。</li>
+<li>不够规范</li>
+<li>最大变化: 在之前只通过大小一个维度来描述首屏的基础上，又衍生出了，计算最大的一次变化，通过层级、标签权重、元素面积等因素，通过计分的方式，记录下最大的一次变化。</li>
+</ol>
+<h2 id="首屏优化手段"><a href="#首屏优化手段" class="headerlink" title="首屏优化手段"></a>首屏优化手段</h2><ol>
+<li>路由懒加载</li>
+<li>非首屏使用异步组件</li>
+<li>首屏不要使用组件延迟加载</li>
+<li>静态资源 CDN</li>
+<li>避免不必要的重定向</li>
+<li>减少页面唯一域名，从而减少 DNS 查询次数/使用 dns prefetch 做预解析</li>
+<li>减小首屏上 JS、CSS 等资源文件大小</li>
+<li>服务端渲染</li>
+<li>减少 DOM 的数量和层级</li>
+<li>精灵图请求</li>
+<li>loading 效果</li>
+<li>gzip</li>
+<li>图片懒加载</li>
+<li>组件按帧率来分别加载: 结合 requestAnimationFrame 使用</li>
+</ol>
+<h2 id="requestAnimationFrame、setTimeout、setInterval"><a href="#requestAnimationFrame、setTimeout、setInterval" class="headerlink" title="requestAnimationFrame、setTimeout、setInterval"></a>requestAnimationFrame、setTimeout、setInterval</h2><h3 id="工作原理"><a href="#工作原理" class="headerlink" title="工作原理"></a>工作原理</h3><ol>
+<li>setTimeout: 这个函数会将要执行的代码或函数放入事件循环队列中，等待当前代码执行完毕后，再等待指定的时间后执行一次。如果设置了定时器，那么每隔一定时间就会执行一次代码，直到 clearTimeout 被调用或窗口被关闭。</li>
+<li>setInterval: 与 setTimeout 类似，setInterval 也会将要执行的代码或函数放入事件循环队列中，但它在指定的时间间隔后会一直重复执行，直到 clearInterval 被调用或窗口被关闭。也就是说，setInterval 会不断地调用函数，直到被取消。</li>
+<li>requestAnimationFrame: 这个函数的工作原理与 setInterval 和 setTimeout 略有不同。它会将回调函数加入到浏览器下一次重绘之前要执行的队列中。这样做的目的是为了确保动画的流畅度，因为浏览器会自动优化这个 API，只在浏览器处于激活状态并且页面处于可见状态时才会执行回调函数。此外，requestAnimationFrame 会根据系统的刷新率来自动匹配时间间隔，从而确保每帧动画的间隔时间尽可能地准确。</li>
+</ol>
+<h3 id="区别"><a href="#区别" class="headerlink" title="区别"></a>区别</h3><ul>
+<li>执行时机: requestAnimationFrame 是由浏览器提供的 API，它会在浏览器下一次重绘之前执行回调函数。这意味着它能够确保动画的流畅度，并且能够自动匹配系统的刷新率。相比之下，setInterval 和 setTimeout 会在指定的时间间隔后执行回调函数，无论浏览器是否处于激活状态或正在进行其他操作。</li>
+<li>性能优化: requestAnimationFrame 由浏览器自动优化，只在浏览器处于激活状态并且页面处于可见状态时才会执行回调函数。这可以节省 CPU、GPU 和内存的使用，特别是在移动设备上。相比之下，setInterval 和 setTimeout 不会自动优化，如果页面处于隐藏或不可见状态，它们会继续执行回调函数，这可能会导致资源的浪费。</li>
+<li>回调函数执行时间: requestAnimationFrame 的回调函数会在浏览器下一次重绘之前执行，因此它能够确保回调函数的执行时间相对准确。相比之下，setInterval 和 setTimeout 的回调函数执行时间取决于浏览器事件循环中的队列和执行时间，因此可能会有一定的延迟</li>
+<li>停止操作: requestAnimationFrame 的回调函数只会在浏览器下一次重绘之前执行一次，因此可以通过清除队列中的回调函数来停止操作。相比之下，setInterval 和 setTimeout 会不断地执行回调函数，直到 clearInterval 或 clearTimeout 被调用或关闭页面为止</li>
+<li>函数节流: 在高频率事件(resize,scroll 等)中，为了防止在一个刷新间隔内发生多次函数执行，使用 requestAnimationFrame 可保证每个刷新间隔内，函数只被执行一次，这样既能保证流畅性，也能更好的节省函数执行的开销</li>
+</ul>
+<h3 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h3><ul>
+<li>setTimeout: 可用于在网页加载后延迟执行某些操作，例如加载页面内容、初始化组件等。也可用于定时触发某些操作，例如定时发送数据、定时检查任务等。</li>
+<li>setInterval: 常用于需要周期性执行的操作，例如定时更新数据、定时触发事件等。在 web 端，如果列表需要定时更新，可以使用 setInterval 来定时获取列表的请求。另外，如果需要在某一特定情况下清除定时任务，可以使用 clearInterval 来停止定时器。</li>
+<li>requestAnimationFrame: 主要用于实现流畅的动画效果。它会在浏览器下一次重绘之前执行指定的函数，避免了频繁的重绘导致的性能问题。requestAnimationFrame 会自动匹配系统的刷新率，从而确保每帧动画的间隔时间尽可能地准确。在需要反复触发的情况下，使用 requestAnimationFrame 可以避免连续调用导致的相互干扰。</li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://hinanyin.github.io">Linfeng.Wang</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://hinanyin.github.io/articles/engineering/browser/">https://hinanyin.github.io/articles/engineering/browser/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://hinanyin.github.io" target="_blank">Nanyin</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E6%B5%8F%E8%A7%88%E5%99%A8/">浏览器</a></div><div class="post-share"><div class="social-share" data-image="https://bu.dusays.com/2022/06/05/629c5257753d1.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><div class="post-reward"><div class="reward-button"><i class="fas fa-qrcode"></i>赞助</div><div class="reward-main"><ul class="reward-all"><li class="reward-item"><a href="/img/wechat.jpg" target="_blank"><img class="post-qr-code-img" src="/img/wechat.jpg" alt="wechat"/></a><div class="post-qr-code-desc">wechat</div></li><li class="reward-item"><a href="/img/alipay.jpg" target="_blank"><img class="post-qr-code-img" src="/img/alipay.jpg" alt="alipay"/></a><div class="post-qr-code-desc">alipay</div></li></ul></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="waline-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">Linfeng.Wang</div><div class="author-info-description">欲买桂花同载酒</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">24</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">14</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">4</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/hinanyin"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/hinanyin" target="_blank" title="Github"><i class="fab fa-github" style="color: #hdhfbb;"></i></a><a class="social-icon" href="/1561682937@qq.com" target="_blank" title="Email"><i class="fas fa-envelope" style="color: #000000;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">This is my Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Navigation-Timing"><span class="toc-number">1.</span> <span class="toc-text">Navigation Timing</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Processing"><span class="toc-number">2.</span> <span class="toc-text">Processing</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#W3C-Paint-Timing"><span class="toc-number">3.</span> <span class="toc-text">W3C Paint Timing</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Core-Web-Vitals"><span class="toc-number">4.</span> <span class="toc-text">Core Web Vitals</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Largest-Contentful-Paint-LCP"><span class="toc-number">4.1.</span> <span class="toc-text">Largest Contentful Paint(LCP)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#First-Input-Delay-FID"><span class="toc-number">4.2.</span> <span class="toc-text">First Input Delay(FID)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Cumulative-Layout-Shift-CLS"><span class="toc-number">4.3.</span> <span class="toc-text">Cumulative Layout Shift(CLS)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#CWV-%E5%B7%A5%E5%85%B7"><span class="toc-number">4.4.</span> <span class="toc-text">CWV 工具</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%A7%E8%83%BD%E8%AF%84%E4%BC%B0%E6%8C%87%E6%A0%87-performance"><span class="toc-number">5.</span> <span class="toc-text">性能评估指标 - performance</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%A1%B5%E9%9D%A2%E6%80%A7%E8%83%BD%E8%AF%84%E4%BC%B0%E5%8F%82%E8%80%83%E6%8C%87%E6%A0%87"><span class="toc-number">5.1.</span> <span class="toc-text">页面性能评估参考指标:</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B7%A5%E7%A8%8B%E5%8C%96%E7%9B%91%E6%8E%A7%E4%BD%93%E7%B3%BB"><span class="toc-number">5.2.</span> <span class="toc-text">工程化监控体系</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E7%9A%84%E5%8F%A6%E4%B8%80%E7%A7%8D%E5%8F%AF%E8%83%BD-bigpipe-%E2%80%94%E2%80%94-%E9%A1%B5%E9%9D%A2%E5%88%86%E8%A7%A3%E6%88%90%E8%8B%A5%E5%B9%B2%E7%9A%84-pagelet"><span class="toc-number">5.3.</span> <span class="toc-text">性能优化的另一种可能:  bigpipe —— 页面分解成若干的 pagelet</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#MVVM-%E4%BC%98%E5%8C%96"><span class="toc-number">5.4.</span> <span class="toc-text">MVVM 优化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%A6%96%E5%B1%8F%E6%96%B9%E6%A1%88%E9%80%89%E6%8B%A9"><span class="toc-number">5.5.</span> <span class="toc-text">首屏方案选择</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%A6%96%E5%B1%8F%E4%BC%98%E5%8C%96%E6%89%8B%E6%AE%B5"><span class="toc-number">6.</span> <span class="toc-text">首屏优化手段</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#requestAnimationFrame%E3%80%81setTimeout%E3%80%81setInterval"><span class="toc-number">7.</span> <span class="toc-text">requestAnimationFrame、setTimeout、setInterval</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86"><span class="toc-number">7.1.</span> <span class="toc-text">工作原理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8C%BA%E5%88%AB"><span class="toc-number">7.2.</span> <span class="toc-text">区别</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="toc-number">7.3.</span> <span class="toc-text">应用场景</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/articles/vue/communication/" title="Vue 源码解析 组件通信"><img src="https://bu.dusays.com/2022/06/05/629c5257753d1.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Vue 源码解析 组件通信"/></a><div class="content"><a class="title" href="/articles/vue/communication/" title="Vue 源码解析 组件通信">Vue 源码解析 组件通信</a><time datetime="2025-02-28T06:37:37.000Z" title="发表于 2025-02-28 14:37:37">2025-02-28</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/articles/vue/keepAlive/" title="Vue 源码解析 keep-alive"><img src="https://bu.dusays.com/2022/05/29/62939662553c9.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Vue 源码解析 keep-alive"/></a><div class="content"><a class="title" href="/articles/vue/keepAlive/" title="Vue 源码解析 keep-alive">Vue 源码解析 keep-alive</a><time datetime="2025-02-28T06:17:09.000Z" title="发表于 2025-02-28 14:17:09">2025-02-28</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/articles/vue/directive/" title="Vue 源码解析 指令"><img src="https://bu.dusays.com/2022/05/26/628fa0426213d.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Vue 源码解析 指令"/></a><div class="content"><a class="title" href="/articles/vue/directive/" title="Vue 源码解析 指令">Vue 源码解析 指令</a><time datetime="2025-02-28T04:01:51.000Z" title="发表于 2025-02-28 12:01:51">2025-02-28</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/articles/vue/filter/" title="Vue 源码解析 过滤器"><img src="https://bu.dusays.com/2022/06/05/629c5257753d1.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Vue 源码解析 过滤器"/></a><div class="content"><a class="title" href="/articles/vue/filter/" title="Vue 源码解析 过滤器">Vue 源码解析 过滤器</a><time datetime="2025-02-28T03:43:53.000Z" title="发表于 2025-02-28 11:43:53">2025-02-28</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/articles/vue/global/" title="Vue 源码解析 全局方法"><img src="https://bu.dusays.com/2022/05/29/62939662553c9.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Vue 源码解析 全局方法"/></a><div class="content"><a class="title" href="/articles/vue/global/" title="Vue 源码解析 全局方法">Vue 源码解析 全局方法</a><time datetime="2025-02-27T10:03:39.000Z" title="发表于 2025-02-27 18:03:39">2025-02-27</time></div></div></div></div></div></div></main><footer id="footer" style="background: transparent;"><div id="footer-wrap"><div class="copyright">&copy;2025 By Linfeng.Wang</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">I wish you to become your own sun, no need to rely on who's light</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><div class="js-pjax"><script>(() => {
+  let initFn = window.walineFn || null
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = {"requiredMeta":["nick","mail"],"locale":{"placeholder":"昵称和邮箱为必填项，为了您能及时收到相关回复的邮件通知，请确保邮箱的正确性！"},"emoji":["//unpkg.com/@waline/emojis@1.2.0/bmoji","//unpkg.com/@waline/emojis@1.2.0/bilibili"],"search":true}
+
+  const destroyWaline = ele => ele.destroy()
+
+  const initWaline = (Fn, el = document, path = window.location.pathname) => {
+    const waline = Fn({
+      el: el.querySelector('#waline-wrap'),
+      serverURL: 'https://waline-ruddy-seven.vercel.app/',
+      pageview: true,
+      dark: 'html[data-theme="dark"]',
+      comment: true,
+      ...option,
+      path: isShuoshuo ? path : (option && option.path) || path
+    })
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyWaline = () => {
+        destroyWaline(waline)
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const loadWaline = (el, path) => {
+    if (initFn) initWaline(initFn, el, path)
+    else {
+      btf.getCSS('https://cdn.jsdelivr.net/npm/@waline/client/dist/waline.min.css')
+        .then(() => import('https://cdn.jsdelivr.net/npm/@waline/client/dist/waline.min.js'))
+        .then(({ init }) => {
+          initFn = init || Waline.init
+          initWaline(initFn, el, path)
+          window.walineFn = initFn
+        })
+    }
+  }
+
+  if (isShuoshuo) {
+    'Waline' === 'Waline'
+      ? window.shuoshuoComment = { loadComment: loadWaline } 
+      : window.loadOtherComment = loadWaline
+    return
+  }
+
+  if ('Waline' === 'Waline' || !false) {
+    if (false) btf.loadComment(document.getElementById('waline-wrap'),loadWaline)
+    else setTimeout(loadWaline, 0)
+  } else {
+    window.loadOtherComment = loadWaline
+  }
+})()</script></div><script defer src="https://cdn.jsdelivr.net/combine/npm/jquery@latest/dist/jquery.min.js,gh/weilining/jsdelivr/jquery/circlemagic/circlemagic.min.js,gh/weilining/jsdelivr@latest/jquery/circlemagic/butterflycirclemagic.js"></script><script defer src="//clustrmaps.com/globe.js?d=5V2tOKp8qAdRM-i8eu7ETTO9ugt5uKbbG-U7Yj8uMl8"></script><script defer src="/live2d-widget/autoload.js"></script><meting-js class="no-destroy" id="8932390" server="netease" type="playlist" fixed="true" autoplay="false" order="random" volume="0.3" list-folded="false" list-max-height="36vh"> </meting-js><script async src="/js/grayscale.js"></script><script id="canvas_nest" defer="defer" color="0,0,255" opacity="0.7" zIndex="-1" count="99" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-nest.min.js"></script><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/activate-power-mode.min.js"></script><script>POWERMODE.colorful = true;
+POWERMODE.shake = true;
+POWERMODE.mobile = false;
+document.body.addEventListener('input', POWERMODE);
+</script><script id="click-show-text" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/click-show-text.min.js" data-mobile="false" data-text="I,LOVE,YOU" data-fontsize="15px" data-random="false" async="async"></script><link rel="stylesheet" href="https://npm.elemecdn.com/aplayer/dist/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://npm.elemecdn.com/aplayer/dist/APlayer.min.js"></script><script src="https://npm.elemecdn.com/meting/dist/Meting.min.js"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索" type="text"/></div></div><hr/><div id="local-search-results"></div><div id="local-search-stats-wrap"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></div><!-- hexo injector body_end start --><script data-pjax>
+  function butterfly_footer_beautify_injector_config(){
+    var parent_div_git = document.getElementById('footer-wrap');
+    var item_html = '<div id="workboard"></div><p id="ghbdages"><a class="github-badge" target="_blank" href="https://hexo.io/" style="margin-inline:5px" data-title="博客框架为Hexo_v5.4.0" title=""><img src="https://img.shields.io/badge/Frame-Hexo-blue?style=flat&amp;logo=hexo" alt=""/></a><a class="github-badge" target="_blank" href="https://butterfly.js.org/" style="margin-inline:5px" data-title="主题版本Butterfly_v3.8.2" title=""><img src="https://img.shields.io/badge/Theme-Butterfly-6513df?style=flat&amp;logo=bitdefender" alt=""/></a><a class="github-badge" target="_blank" href="https://www.jsdelivr.com/" style="margin-inline:5px" data-title="本站使用JsDelivr为静态资源提供CDN加速" title=""><img src="https://img.shields.io/badge/CDN-jsDelivr-orange?style=flat&amp;logo=jsDelivr" alt=""/></a><a class="github-badge" target="_blank" href="https://vercel.com/" style="margin-inline:5px" data-title="本站采用双线部署，默认线路托管于Vercel" title=""><img src="https://img.shields.io/badge/Hosted-Vercel-brightgreen?style=flat&amp;logo=Vercel" alt=""/></a><a class="github-badge" target="_blank" href="https://vercel.com/" style="margin-inline:5px" data-title="本站采用双线部署，联通线路托管于Coding" title=""><img src="https://img.shields.io/badge/Hosted-Coding-0cedbe?style=flat&amp;logo=Codio" alt=""/></a><a class="github-badge" target="_blank" href="https://github.com/" style="margin-inline:5px" data-title="本站项目由Github托管" title=""><img src="https://img.shields.io/badge/Source-Github-d021d6?style=flat&amp;logo=GitHub" alt=""/></a><a class="github-badge" target="_blank" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" style="margin-inline:5px" data-title="本站采用知识共享署名-非商业性使用-相同方式共享4.0国际许可协议进行许可" title=""><img src="https://img.shields.io/badge/Copyright-BY--NC--SA%204.0-d42328?style=flat&amp;logo=Claris" alt=""/></a></p>';
+    console.log('已挂载butterfly_footer_beautify')
+    parent_div_git.insertAdjacentHTML("beforeend",item_html)
+    }
+  var elist = 'null'.split(',');
+  var cpage = location.pathname;
+  var epage = 'all';
+  var flag = 0;
+
+  for (var i=0;i<elist.length;i++){
+    if (cpage.includes(elist[i])){
+      flag++;
+    }
+  }
+
+  if ((epage ==='all')&&(flag == 0)){
+    butterfly_footer_beautify_injector_config();
+  }
+  else if (epage === cpage){
+    butterfly_footer_beautify_injector_config();
+  }
+  </script><script async src="/js/footer-beautify-runtime.js"></script><!-- hexo injector body_end end --></body></html>
