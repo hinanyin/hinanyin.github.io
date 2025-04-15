@@ -7008,6 +7008,32 @@ html{
 [data-theme="light"] #bangumis .details em {
   color: #000 !important;
 }
+@font-face {
+  font-family: "iconfont";
+  src: url("//at.alicdn.com/t/c/font_4892045_zt2l945z64.woff2?t=1744619651193") format('woff2'), url("//at.alicdn.com/t/c/font_4892045_zt2l945z64.woff?t=1744619651193") format('woff'), url("//at.alicdn.com/t/c/font_4892045_zt2l945z64.ttf?t=1744619651193") format('truetype');
+}
+.iconfont {
+  font-family: "iconfont" !important;
+  font-size: 25px;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.icon-github:before {
+  content: "\e85a";
+}
+.icon-qq:before {
+  content: "\e65e";
+}
+.icon-bilibili:before {
+  content: "\e600";
+}
+.icon-email:before {
+  content: "\e62c";
+}
+.icon-QQMusic:before {
+  content: "\e77a";
+}
 #page-header {
   background: transparent;
   background-image: none !important;
